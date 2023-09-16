@@ -25,7 +25,7 @@ func (h *Handler) Pay(ctx *gin.Context) {
 	case string(model.Increase):
 		account, err = db.Access.GetData(db.Pool, data.User_ID)
 		if err != nil {
-			log.Printf("Table doesn't have rows with id = %d.", data.User_ID)
+			log.Printf("Table doesn't have rows with id = %d", data.User_ID)
 			err = db.Access.AddData(db.Pool, data.User_ID, data.Amount)
 			if err != nil {
 				log.Printf("Can't append data to table! err: %s.", err)
