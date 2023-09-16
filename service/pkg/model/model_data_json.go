@@ -6,7 +6,7 @@ import (
 )
 
 type DataRequest struct {
-	User_ID   int64  `json:"user_id"`
+	User_ID   int64  `json:"user_id" json:"user___id"`
 	Amount    int64  `json:"amount"`
 	Operation string `json:"operation"`
 }

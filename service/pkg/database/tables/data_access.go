@@ -29,8 +29,16 @@ func (da *DataAccess) GetData(pool *pgxpool.Pool, dr model.DataRequest) (model.A
 	return tableData, pgx.ErrNoRows
 }
 
+func (da *DataAccess) AddData(pool *pgxpool.Pool, dr model.DataRequest) error {
+	_, err := pool.Exec(context.Background(), "INSERT INTO data_balance (user_id, balance) VALUES ($1, $2)", dr.User_ID, dr.Amount)
+	if err != nil {
+		return err
+	}
+	return err
+}
+
 func (da *DataAccess) IncreaseData(pool *pgxpool.Pool, dr model.DataRequest) error {
-	_, err := pool.Exec(context.Background(), "UPDATE data_balance SET balance = balance + $1 WHERE user_id = $2", dr.Amount, dr.User_ID)
+	_, err := pool.Query(context.Background(), "UPDATE data_balance SET balance = balance + $1 WHERE user_id = $2", dr.Amount, dr.User_ID)
 	if err != nil {
 		return err
 	}
