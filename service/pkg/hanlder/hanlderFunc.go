@@ -23,28 +23,28 @@ func (h *Handler) Pay(ctx *gin.Context) {
 
 	switch data.Operation {
 	case string(model.Increase):
-		account, err = db.Access.GetData(db.Pool, data)
+		account, err = db.Access.GetData(db.Pool, data.User_ID)
 		if err != nil {
 			log.Printf("Table doesn't have rows with id = %d", data.User_ID)
-			err = db.Access.AddData(db.Pool, data)
+			err = db.Access.AddData(db.Pool, data.User_ID, data.Amount)
 			if err != nil {
 				log.Printf("Can't append data to table! err: %s", err)
 			}
 			log.Printf("Add data to table!")
 			return
 		}
-		err = db.Access.IncreaseData(db.Pool, data)
+		err = db.Access.IncreaseData(db.Pool, data.User_ID, data.Amount)
 		if err != nil {
 			log.Printf("I can't communicate with database. err: %s", err)
 		}
 	case string(model.Decrease):
-		account, err = db.Access.GetData(db.Pool, data)
+		account, err = db.Access.GetData(db.Pool, data.User_ID)
 		if err != nil {
 			log.Printf("Table doesn't have rows with id = %d", data.User_ID)
 			return
 		}
 		if account.Balance >= data.Amount {
-			err = db.Access.DecreaseData(db.Pool, data)
+			err = db.Access.DecreaseData(db.Pool, data.User_ID, data.Amount)
 			if err != nil {
 				log.Printf("I can't communicate with database. err: %s", err)
 			}
@@ -52,6 +52,22 @@ func (h *Handler) Pay(ctx *gin.Context) {
 			log.Printf("The balance is less than the requested amount.")
 		}
 	case string(model.Transfer):
+		account, err = db.Access.GetData(db.Pool, data.User_ID)
+		if err != nil {
+			log.Printf("Table doesn't have rows with id = %d", data.User_ID)
+			return
+		}
 
+		if account.Balance >= data.Amount {
+			err = db.Access.DecreaseData(db.Pool, data.User_ID, data.Amount)
+			if err != nil {
+				log.Printf("I can't communicate with database. err: %s", err)
+			}
+
+			err = db.Access.IncreaseData(db.Pool, data.User1_ID, data.Amount)
+			if err != nil {
+				log.Printf("I can't communicate with database. err: %s", err)
+			}
+		}
 	}
 }
