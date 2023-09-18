@@ -12,7 +12,15 @@ func (h *Handler) InitRouter() *gin.Engine {
 	{
 		v1 := api.Group("/v1")
 		{
-			v1.POST("/pay", h.Pay)
+			operations := v1.Group("/operations")
+			{
+				operations.POST("/:operations_id", h.createAccount)
+				operations.PUT("/:operations_id", h.updateBalance)
+			}
+			accounts := v1.Group("/accounts")
+			{
+				accounts.GET("/:user_id", h.getBalance)
+			}
 		}
 	}
 
