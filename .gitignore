@@ -21,7 +21,7 @@
 *.log
 
 # All files which included in ".idea"
-*.idea
+.idea/
 
 # Go workspace file
 go.work
