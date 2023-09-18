@@ -17,5 +17,11 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+# All logs
+*.log
+
+# All files which included in ".idea"
+*.idea
+
 # Go workspace file
 go.work
