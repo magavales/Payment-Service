@@ -18,6 +18,8 @@ func (h *Handler) getBalance(ctx *gin.Context) {
 		err     error
 	)
 
+	resp.RespWriter = ctx.Writer
+
 	userID, _ := strconv.Atoi(ctx.Param("user_id"))
 
 	db.Connect()
@@ -54,6 +56,7 @@ func (h *Handler) createAccount(ctx *gin.Context) {
 		return
 	}
 
+	resp.RespWriter = ctx.Writer
 	db.Connect()
 
 	err = db.Access.AddData(db.Pool, data.UserId, data.Amount)
