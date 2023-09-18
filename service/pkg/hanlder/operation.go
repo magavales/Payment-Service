@@ -95,11 +95,11 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 			err = db.Access.DecreaseData(db.Pool, data.FromID, data.Amount)
 			if err != nil {
 				log.Printf("I can't communicate with database. err: %s", err)
-			}
-
-			err = db.Access.IncreaseData(db.Pool, data.ToID, data.Amount)
-			if err != nil {
-				log.Printf("I can't communicate with the database. err: %s", err)
+			} else {
+				err = db.Access.IncreaseData(db.Pool, data.ToID, data.Amount)
+				if err != nil {
+					log.Printf("I can't communicate with the database. err: %s", err)
+				}
 			}
 		} else {
 			log.Printf("The balance is less than the amount requested.")
