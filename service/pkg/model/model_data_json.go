@@ -6,10 +6,10 @@ import (
 )
 
 type DataRequest struct {
-	User_ID   int64  `json:"user_id"`
-	User1_ID  int64  `json:"user1_Id"`
-	Amount    int64  `json:"amount"`
-	Operation string `json:"operation"`
+	UserId int64 `json:"user_id"`
+	FromID int64 `json:"from_id"`
+	ToID   int64 `json:"to_id"`
+	Amount int64 `json:"amount"`
 }
 
 func (dr *DataRequest) DecodeJSON(r io.Reader) error {
