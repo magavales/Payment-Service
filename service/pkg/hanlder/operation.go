@@ -97,6 +97,12 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 
 	switch operation {
 	case string(model.Increase):
+		if data.UserId == "" {
+			log.Println("Id is uncorrected!")
+			resp.SetStatusConflict()
+			return
+		}
+
 		err = db.Access.IncreaseData(db.Pool, data.UserId, data.Amount)
 		if err != nil {
 			log.Printf("I can't communicate with the database. err: %s.", err)
@@ -105,6 +111,12 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 		}
 		resp.SetStatusOk()
 	case string(model.Decrease):
+		if data.UserId == "" {
+			log.Println("Id is uncorrected!")
+			resp.SetStatusConflict()
+			return
+		}
+
 		account, err = db.Access.GetData(db.Pool, data.UserId)
 		if err != nil {
 			log.Printf("Table doesn't have rows with id = %s.", data.UserId)
@@ -125,6 +137,12 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 			resp.SetStatusBadRequest()
 		}
 	case string(model.Transfer):
+		if data.FromID == "" || data.ToID == "" {
+			log.Println("Id is uncorrected!")
+			resp.SetStatusConflict()
+			return
+		}
+
 		account, err = db.Access.GetData(db.Pool, data.FromID)
 		if err != nil {
 			log.Printf("Table doesn't have rows with id = %s.", data.UserId)

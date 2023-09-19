@@ -38,7 +38,7 @@ func (da *DataAccess) AddData(pool *pgxpool.Pool, id string) error {
 }
 
 func (da *DataAccess) IncreaseData(pool *pgxpool.Pool, id string, amount int64) error {
-	_, err := pool.Query(context.Background(), "UPDATE data_balance SET balance = balance + $1 WHERE user_id = $2", amount, id)
+	_, err := pool.Exec(context.Background(), "UPDATE data_balance SET balance = balance + $1 WHERE user_id = $2", amount, id)
 	if err != nil {
 		return err
 	}
