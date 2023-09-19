@@ -11,7 +11,7 @@ import (
 type DataAccess struct {
 }
 
-func (da *DataAccess) GetData(pool *pgxpool.Pool, id int64) (model.Account, error) {
+func (da *DataAccess) GetData(pool *pgxpool.Pool, id string) (model.Account, error) {
 	var tableData model.Account
 	rows, err := pool.Query(context.Background(), "SELECT user_id, balance FROM data_balance WHERE user_id = $1", id)
 	if err != nil {
@@ -29,15 +29,15 @@ func (da *DataAccess) GetData(pool *pgxpool.Pool, id int64) (model.Account, erro
 	return tableData, pgx.ErrNoRows
 }
 
-func (da *DataAccess) AddData(pool *pgxpool.Pool, id, amount int64) error {
-	_, err := pool.Exec(context.Background(), "INSERT INTO data_balance (user_id, balance) VALUES ($1, $2)", id, amount)
+func (da *DataAccess) AddData(pool *pgxpool.Pool, id string) error {
+	_, err := pool.Exec(context.Background(), "INSERT INTO data_balance (user_id, balance) VALUES ($1, $2)", id, 0)
 	if err != nil {
 		return err
 	}
 	return err
 }
 
-func (da *DataAccess) IncreaseData(pool *pgxpool.Pool, id, amount int64) error {
+func (da *DataAccess) IncreaseData(pool *pgxpool.Pool, id string, amount int64) error {
 	_, err := pool.Query(context.Background(), "UPDATE data_balance SET balance = balance + $1 WHERE user_id = $2", amount, id)
 	if err != nil {
 		return err
@@ -45,7 +45,7 @@ func (da *DataAccess) IncreaseData(pool *pgxpool.Pool, id, amount int64) error {
 	return err
 }
 
-func (da *DataAccess) DecreaseData(pool *pgxpool.Pool, id, amount int64) error {
+func (da *DataAccess) DecreaseData(pool *pgxpool.Pool, id string, amount int64) error {
 	_, err := pool.Exec(context.Background(), "UPDATE data_balance SET balance = balance - $1 WHERE user_id = $2", amount, id)
 	if err != nil {
 		return err
