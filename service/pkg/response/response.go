@@ -22,6 +22,14 @@ func (resp *Response) SetStatusNotFound() {
 	resp.RespWriter.WriteHeader(http.StatusNotFound)
 }
 
+func (resp *Response) SetStatusInternalServerError() {
+	resp.RespWriter.WriteHeader(http.StatusInternalServerError)
+}
+
+func (resp *Response) SetStatusConflict() {
+	resp.RespWriter.WriteHeader(http.StatusConflict)
+}
+
 func (resp *Response) SetData(data []byte) {
 	_, err := resp.RespWriter.Write(data)
 	if err != nil {

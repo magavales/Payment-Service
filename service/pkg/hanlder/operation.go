@@ -32,7 +32,7 @@ func (h *Handler) getBalance(ctx *gin.Context) {
 
 	accountToJSON, err := json.Marshal(account)
 	if err != nil {
-		resp.SetStatusNotFound()
+		resp.SetStatusInternalServerError()
 		log.Println("Data hasn't been encoded to JSON!")
 		return
 	}
@@ -145,7 +145,7 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 			return
 		} else {
 			log.Printf("The balance is less than the amount requested.")
-			resp.SetStatusBadRequest()
+			resp.SetStatusConflict()
 		}
 	}
 }
