@@ -14,12 +14,12 @@ func (h *Handler) InitRouter() *gin.Engine {
 		{
 			operations := v1.Group("/operations")
 			{
-				operations.POST("/:operations_id", h.createAccount)
 				operations.PUT("/:operations_id", h.updateBalance)
 			}
 			accounts := v1.Group("/accounts")
 			{
 				accounts.GET("/:user_id", h.getBalance)
+				accounts.POST("/", h.createAccount)
 			}
 		}
 	}

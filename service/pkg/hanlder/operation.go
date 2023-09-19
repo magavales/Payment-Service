@@ -3,11 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"log"
 	"service/pkg/database"
 	"service/pkg/model"
 	"service/pkg/response"
-	"strconv"
 )
 
 func (h *Handler) getBalance(ctx *gin.Context) {
@@ -20,12 +20,12 @@ func (h *Handler) getBalance(ctx *gin.Context) {
 
 	resp.RespWriter = ctx.Writer
 
-	userID, _ := strconv.Atoi(ctx.Param("user_id"))
+	userID := ctx.Param("user_id")
 
 	db.Connect()
-	account, err = db.Access.GetData(db.Pool, int64(userID))
+	account, err = db.Access.GetData(db.Pool, userID)
 	if err != nil {
-		log.Printf("Table doesn't have rows with id = %d", userID)
+		log.Printf("Table doesn't have rows with id = %s", userID)
 		resp.SetStatusNotFound()
 		return
 	}
@@ -43,30 +43,35 @@ func (h *Handler) getBalance(ctx *gin.Context) {
 
 func (h *Handler) createAccount(ctx *gin.Context) {
 	var (
-		data model.DataRequest
-		resp response.Response
-		db   database.Database
-		err  error
+		account model.Account
+		resp    response.Response
+		db      database.Database
+		err     error
 	)
 
-	err = data.DecodeJSON(ctx.Request.Body)
-	if err != nil {
-		log.Println("JSON hasn't been decoded!")
-		resp.SetStatusBadRequest()
-		return
-	}
+	id := uuid.Must(uuid.NewRandom())
 
 	resp.RespWriter = ctx.Writer
 	db.Connect()
 
-	err = db.Access.AddData(db.Pool, data.UserId, data.Amount)
+	err = db.Access.AddData(db.Pool, id.String())
 	if err != nil {
 		resp.SetStatusBadRequest()
 		log.Fatalf("Can't append data to table! err: %s.", err)
 		return
 	}
 	log.Printf("Add data to table!")
+	account.UserId = id.String()
+
+	accountToJSON, err := json.Marshal(account)
+	if err != nil {
+		resp.SetStatusInternalServerError()
+		log.Println("Data hasn't been encoded to JSON!")
+		return
+	}
+
 	resp.SetStatusOk()
+	resp.SetData(accountToJSON)
 }
 
 func (h *Handler) updateBalance(ctx *gin.Context) {
@@ -102,7 +107,7 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 	case string(model.Decrease):
 		account, err = db.Access.GetData(db.Pool, data.UserId)
 		if err != nil {
-			log.Printf("Table doesn't have rows with id = %d.", data.UserId)
+			log.Printf("Table doesn't have rows with id = %s.", data.UserId)
 			resp.SetStatusNotFound()
 			return
 		}
@@ -122,7 +127,7 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 	case string(model.Transfer):
 		account, err = db.Access.GetData(db.Pool, data.FromID)
 		if err != nil {
-			log.Printf("Table doesn't have rows with id = %d.", data.UserId)
+			log.Printf("Table doesn't have rows with id = %s.", data.UserId)
 			resp.SetStatusNotFound()
 			return
 		}
