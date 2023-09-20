@@ -23,7 +23,7 @@ func (h *Handler) getBalance(ctx *gin.Context) {
 	userID := ctx.Param("user_id")
 
 	db.Connect()
-	account, err = db.Access.GetData(db.Pool, userID)
+	account, err = db.Access.GetAccountData(db.Pool, userID)
 	if err != nil {
 		log.Printf("Table doesn't have rows with id = %s", userID)
 		resp.SetStatusNotFound()
@@ -54,7 +54,7 @@ func (h *Handler) createAccount(ctx *gin.Context) {
 	resp.RespWriter = ctx.Writer
 	db.Connect()
 
-	err = db.Access.AddData(db.Pool, id.String())
+	err = db.Access.AddAccountData(db.Pool, id.String())
 	if err != nil {
 		resp.SetStatusBadRequest()
 		log.Fatalf("Can't append data to table! err: %s.", err)
@@ -103,12 +103,19 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 			return
 		}
 
-		err = db.Access.IncreaseData(db.Pool, data.UserId, data.Amount)
+		err = db.Access.IncreaseBalanceAccountData(db.Pool, data.UserId, data.Amount)
 		if err != nil {
 			log.Printf("I can't communicate with the database. err: %s.", err)
 			resp.SetStatusBadRequest()
 			return
 		}
+		err = db.Access.AddHistoryOperationData(db.Pool, data, string(model.Increase))
+		if err != nil {
+			log.Printf("History didn't send! err: %s", err)
+			resp.SetStatusBadRequest()
+			return
+		}
+		log.Printf("Increase has been completed!")
 		resp.SetStatusOk()
 	case string(model.Decrease):
 		if data.UserId == "" {
@@ -117,19 +124,27 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 			return
 		}
 
-		account, err = db.Access.GetData(db.Pool, data.UserId)
+		account, err = db.Access.GetAccountData(db.Pool, data.UserId)
 		if err != nil {
 			log.Printf("Table doesn't have rows with id = %s.", data.UserId)
 			resp.SetStatusNotFound()
 			return
 		}
 		if account.Balance >= data.Amount {
-			err = db.Access.DecreaseData(db.Pool, data.UserId, data.Amount)
+			err = db.Access.DecreaseBalanceAccountData(db.Pool, data.UserId, data.Amount)
 			if err != nil {
 				log.Printf("I can't communicate with the database. err: %s", err)
 				resp.SetStatusBadRequest()
 				return
 			}
+
+			err = db.Access.AddHistoryOperationData(db.Pool, data, string(model.Decrease))
+			if err != nil {
+				log.Printf("History didn't send! err: %s", err)
+				resp.SetStatusBadRequest()
+				return
+			}
+			log.Printf("Decrease has been completed!")
 			resp.SetStatusOk()
 			return
 		} else {
@@ -143,27 +158,35 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 			return
 		}
 
-		account, err = db.Access.GetData(db.Pool, data.FromID)
+		account, err = db.Access.GetAccountData(db.Pool, data.FromID)
 		if err != nil {
 			log.Printf("Table doesn't have rows with id = %s.", data.UserId)
 			resp.SetStatusNotFound()
 			return
 		}
 		if account.Balance >= data.Amount {
-			err = db.Access.DecreaseData(db.Pool, data.FromID, data.Amount)
+			err = db.Access.DecreaseBalanceAccountData(db.Pool, data.FromID, data.Amount)
 			if err != nil {
 				log.Printf("I can't communicate with database. err: %s", err)
 				resp.SetStatusBadRequest()
 				return
 			} else {
-				err = db.Access.IncreaseData(db.Pool, data.ToID, data.Amount)
+				err = db.Access.IncreaseBalanceAccountData(db.Pool, data.ToID, data.Amount)
 				if err != nil {
 					log.Printf("I can't communicate with the database. err: %s", err)
 					resp.SetStatusBadRequest()
 					return
 				}
 			}
-			log.Printf("Transfer has been completed")
+
+			err = db.Access.AddHistoryOperationData(db.Pool, data, string(model.Transfer))
+			if err != nil {
+				log.Printf("History didn't send! err: %s", err)
+				resp.SetStatusBadRequest()
+				return
+			}
+
+			log.Printf("Transfer has been completed!")
 			resp.SetStatusOk()
 			return
 		} else {
@@ -171,4 +194,35 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 			resp.SetStatusConflict()
 		}
 	}
+}
+
+func (h *Handler) getHistory(ctx *gin.Context) {
+	var (
+		db            database.Database
+		history       model.HistoryOperation
+		historyToJSON []byte
+		resp          response.Response
+		err           error
+	)
+
+	id := ctx.Param("user_id")
+	resp.RespWriter = ctx.Writer
+
+	db.Connect()
+	history, err = db.Access.GetHistoryOperationData(db.Pool, id)
+	if err != nil {
+		log.Printf("Table doesn't have rows with id = %s", id)
+		resp.SetStatusNotFound()
+		return
+	}
+
+	historyToJSON, err = json.Marshal(history)
+	if err != nil {
+		resp.SetStatusInternalServerError()
+		log.Println("Data hasn't been encoded to JSON!")
+		return
+	}
+
+	resp.SetStatusOk()
+	resp.SetData(historyToJSON)
 }
