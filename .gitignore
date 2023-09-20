@@ -23,5 +23,9 @@
 # All files which included in ".idea"
 service/.idea/
 
+.DS_Store
+.DS_Store?
+.DS_Store/
+
 # Go workspace file
 go.work
