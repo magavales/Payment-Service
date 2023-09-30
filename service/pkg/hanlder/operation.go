@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"log"
@@ -76,18 +77,24 @@ func (h *Handler) createAccount(ctx *gin.Context) {
 
 func (h *Handler) updateBalance(ctx *gin.Context) {
 	var (
-		data    model.DataRequest
-		db      database.Database
-		account model.Account
-		resp    response.Response
-		err     error
+		data        model.DataRequest
+		db          database.Database
+		account     model.Account
+		resp        response.Response
+		err         error
+		syntaxError *json.SyntaxError
 	)
 
-	err = data.DecodeJSON(ctx.Request.Body)
 	if err != nil {
-		log.Println("JSON hasn't been decoded!")
-		resp.SetStatusBadRequest()
-		return
+		if errors.As(err, &syntaxError) {
+			log.Printf("JSON file has syntax error. Error: %s\n", err)
+			resp.SetStatusBadRequest()
+			return
+		} else {
+			log.Printf("The service couldn't decode JSON file. Error: %s\n", err)
+			resp.SetStatusInternalServerError()
+			return
+		}
 	}
 
 	resp.RespWriter = ctx.Writer
