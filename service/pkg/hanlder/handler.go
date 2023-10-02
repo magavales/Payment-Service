@@ -21,6 +21,10 @@ func (h *Handler) InitRouter() *gin.Engine {
 				accounts.GET("/:user_id", h.getBalance)
 				accounts.POST("/", h.createAccount)
 			}
+			history := v1.Group("/history")
+			{
+				history.GET("/:user_id", h.getHistory)
+			}
 		}
 	}
 

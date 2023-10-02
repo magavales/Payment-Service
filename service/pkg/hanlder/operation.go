@@ -24,7 +24,7 @@ func (h *Handler) getBalance(ctx *gin.Context) {
 	userID := ctx.Param("user_id")
 
 	db.Connect()
-	account, err = db.Access.GetData(db.Pool, userID)
+	account, err = db.Access.GetAccount(db.Pool, userID)
 	if err != nil {
 		log.Printf("Table doesn't have rows with id = %s", userID)
 		resp.SetStatusNotFound()
@@ -55,7 +55,7 @@ func (h *Handler) createAccount(ctx *gin.Context) {
 	resp.RespWriter = ctx.Writer
 	db.Connect()
 
-	err = db.Access.AddData(db.Pool, id.String())
+	err = db.Access.CreateAccount(db.Pool, id.String())
 	if err != nil {
 		resp.SetStatusBadRequest()
 		log.Fatalf("Can't append data to table! err: %s.", err)
@@ -110,12 +110,25 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 			return
 		}
 
-		err = db.Access.IncreaseData(db.Pool, data.UserId, data.Amount)
+		err = db.Access.IncreaseAccountBalance(db.Pool, data.UserId, data.Amount)
 		if err != nil {
 			log.Printf("I can't communicate with the database. err: %s.", err)
 			resp.SetStatusBadRequest()
 			return
 		}
+		err = db.Access.AddHistoryOfTransaction(db.Pool, data, string(model.Increase))
+		if err != nil {
+			log.Printf("Transaction hasn't been added in the history of transaction!: %s", err)
+			err = db.Access.DecreaseAccountBalance(db.Pool, data.UserId, data.Amount)
+			if err != nil {
+				log.Printf("I can't communicate with the database. err: %s.", err)
+				resp.SetStatusBadRequest()
+				return
+			}
+			resp.SetStatusInternalServerError()
+			return
+		}
+		log.Printf("Increase has been completed!")
 		resp.SetStatusOk()
 	case string(model.Decrease):
 		if data.UserId == "" {
@@ -124,19 +137,33 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 			return
 		}
 
-		account, err = db.Access.GetData(db.Pool, data.UserId)
+		account, err = db.Access.GetAccount(db.Pool, data.UserId)
 		if err != nil {
 			log.Printf("Table doesn't have rows with id = %s.", data.UserId)
 			resp.SetStatusNotFound()
 			return
 		}
 		if account.Balance >= data.Amount {
-			err = db.Access.DecreaseData(db.Pool, data.UserId, data.Amount)
+			err = db.Access.DecreaseAccountBalance(db.Pool, data.UserId, data.Amount)
 			if err != nil {
 				log.Printf("I can't communicate with the database. err: %s", err)
 				resp.SetStatusBadRequest()
 				return
 			}
+
+			err = db.Access.AddHistoryOfTransaction(db.Pool, data, string(model.Decrease))
+			if err != nil {
+				log.Printf("Transaction hasn't been added in the history of transaction! err: %s", err)
+				err = db.Access.IncreaseAccountBalance(db.Pool, data.UserId, data.Amount)
+				if err != nil {
+					log.Printf("I can't communicate with the database. err: %s.", err)
+					resp.SetStatusBadRequest()
+					return
+				}
+				resp.SetStatusInternalServerError()
+				return
+			}
+			log.Printf("Decrease has been completed!")
 			resp.SetStatusOk()
 			return
 		} else {
@@ -150,27 +177,47 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 			return
 		}
 
-		account, err = db.Access.GetData(db.Pool, data.FromID)
+		account, err = db.Access.GetAccount(db.Pool, data.FromID)
 		if err != nil {
 			log.Printf("Table doesn't have rows with id = %s.", data.UserId)
 			resp.SetStatusNotFound()
 			return
 		}
 		if account.Balance >= data.Amount {
-			err = db.Access.DecreaseData(db.Pool, data.FromID, data.Amount)
+			err = db.Access.DecreaseAccountBalance(db.Pool, data.FromID, data.Amount)
 			if err != nil {
 				log.Printf("I can't communicate with database. err: %s", err)
 				resp.SetStatusBadRequest()
 				return
 			} else {
-				err = db.Access.IncreaseData(db.Pool, data.ToID, data.Amount)
+				err = db.Access.IncreaseAccountBalance(db.Pool, data.ToID, data.Amount)
 				if err != nil {
 					log.Printf("I can't communicate with the database. err: %s", err)
 					resp.SetStatusBadRequest()
 					return
 				}
 			}
-			log.Printf("Transfer has been completed")
+
+			err = db.Access.AddHistoryOfTransaction(db.Pool, data, string(model.Transfer))
+			if err != nil {
+				log.Printf("Transaction hasn't been added in the history of transaction! err: %s", err)
+				err = db.Access.IncreaseAccountBalance(db.Pool, data.FromID, data.Amount)
+				if err != nil {
+					log.Printf("I can't communicate with the database. err: %s", err)
+					resp.SetStatusInternalServerError()
+					return
+				}
+				err = db.Access.DecreaseAccountBalance(db.Pool, data.ToID, data.Amount)
+				if err != nil {
+					log.Printf("I can't communicate with database. err: %s", err)
+					resp.SetStatusBadRequest()
+					return
+				}
+				resp.SetStatusBadRequest()
+				return
+			}
+
+			log.Printf("Transfer has been completed!")
 			resp.SetStatusOk()
 			return
 		} else {
@@ -178,4 +225,35 @@ func (h *Handler) updateBalance(ctx *gin.Context) {
 			resp.SetStatusConflict()
 		}
 	}
+}
+
+func (h *Handler) getHistory(ctx *gin.Context) {
+	var (
+		db            database.Database
+		history       model.HistoryOperation
+		historyToJSON []byte
+		resp          response.Response
+		err           error
+	)
+
+	id := ctx.Param("user_id")
+	resp.RespWriter = ctx.Writer
+
+	db.Connect()
+	history, err = db.Access.GetHistoryOfTransaction(db.Pool, id)
+	if err != nil {
+		log.Printf("Table doesn't have rows with id = %s", id)
+		resp.SetStatusNotFound()
+		return
+	}
+
+	historyToJSON, err = json.Marshal(history)
+	if err != nil {
+		resp.SetStatusInternalServerError()
+		log.Println("Data hasn't been encoded to JSON!")
+		return
+	}
+
+	resp.SetStatusOk()
+	resp.SetData(historyToJSON)
 }
