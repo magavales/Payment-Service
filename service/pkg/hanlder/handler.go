@@ -1,8 +1,16 @@
 package handler
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"service/pkg/service"
+)
 
 type Handler struct {
+	service *service.Service
+}
+
+func NewHandler(service *service.Service) *Handler {
+	return &Handler{service: service}
 }
 
 func (h *Handler) InitRouter() *gin.Engine {
@@ -12,14 +20,11 @@ func (h *Handler) InitRouter() *gin.Engine {
 	{
 		v1 := api.Group("/v1")
 		{
-			operations := v1.Group("/operations")
-			{
-				operations.PUT("/:operations_id", h.updateBalance)
-			}
 			accounts := v1.Group("/accounts")
 			{
 				accounts.GET("/:user_id", h.getBalance)
 				accounts.POST("/", h.createAccount)
+				accounts.PUT("/:operations_id", h.updateBalance)
 			}
 			history := v1.Group("/history")
 			{

@@ -1,0 +1,28 @@
+package database
+
+import (
+	"fmt"
+	"github.com/jmoiron/sqlx"
+)
+
+type Config struct {
+	Host     string
+	Port     string
+	User     string
+	DB       string
+	Password string
+}
+
+func NewConnectToDatabase(config Config) (*sqlx.DB, error) {
+	db, err := sqlx.Connect("postgres", fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s",
+		config.Host, config.Port, config.User, config.DB, config.Password))
+	if err != nil {
+		return nil, err
+	}
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+
+	return db, err
+}
