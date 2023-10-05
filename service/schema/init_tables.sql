@@ -4,8 +4,9 @@ CREATE TABLE accounts (
 );
 
 CREATE TABLE history (
-    from_id bigint primary key references accounts(user_id) not null,
+    id bigserial primary key not null,
+    from_id bigint not null,
     to_id bigint not null,
-    operation varchar(16) not null,
+    transaction varchar(16) not null,
     amount bigint not null
 )

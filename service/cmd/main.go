@@ -16,14 +16,16 @@ func main() {
 
 	dbConfig := database.Config{
 		Host:     viper.GetString("db.host"),
-		Port:     viper.GetString("port"),
+		Port:     viper.GetString("db.port"),
 		User:     viper.GetString("db.username"),
 		DB:       viper.GetString("db.dbname"),
 		Password: viper.GetString("db.password"),
+		SSLMode:  viper.GetString("db.sslmode"),
 	}
 
 	connect, err := database.NewConnectToDatabase(dbConfig)
 	if err != nil {
+		log.Printf("err:%s", err)
 		return
 	}
 
@@ -33,7 +35,7 @@ func main() {
 	router := handlers.InitRouter()
 
 	serv := new(server.Server)
-	err = serv.InitServer("8080", router)
+	err = serv.InitServer(viper.GetString("port"), router)
 	if err != nil {
 		log.Fatalf("Server can't be opened: %s", err)
 	}

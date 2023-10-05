@@ -7,14 +7,15 @@ import (
 )
 
 type Account interface {
-	CreateAccount() error
+	CreateAccount() (int64, error)
 	GetAccount(id int64) (model.Account, error)
 	IncreaseAccountBalance(id int64, amount int64) error
 	DecreaseAccountBalance(id int64, amount int64) error
 }
 
 type History interface {
-	GetAllHistoryOfTransaction() ([]model.HistoryOperation, error)
+	GetAllHistoryOfTransaction(id int64) ([]model.HistoryTransaction, error)
+	AddHistoryOfTransaction(id int64, transaction string, dataRequest model.DataRequest) error
 }
 
 type Database struct {

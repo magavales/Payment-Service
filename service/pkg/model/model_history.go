@@ -1,15 +1,9 @@
 package model
 
-type HistoryOperation struct {
-	UserId    string `json:"user_id"`
-	Operation string `json:"operation"`
-	Amount    int64  `json:"amount"`
-	ToID      string `json:"to_id"`
-}
-
-func (ho *HistoryOperation) ParseData(values []interface{}) {
-	ho.UserId = values[0].(string)
-	ho.Operation = values[1].(string)
-	ho.Amount = values[2].(int64)
-	ho.ToID = values[3].(string)
+type HistoryTransaction struct {
+	ID          int64  `json:"id" db:"id"`
+	FromID      int64  `json:"from_id" db:"from_id"`
+	ToID        int64  `json:"to_id" db:"to_id"`
+	Transaction string `json:"operation" db:"transaction"`
+	Amount      int64  `json:"amount" db:"amount"`
 }
